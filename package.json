@@ -1,0 +1,20 @@
+{
+  "name": "jquery-ajaxQueueManager",
+  "version": "0.0.1",
+  "description": "An Ajax Queue Manager, built upon Alexander Farkas' jQuery.ajaxManager",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "grunt test"
+  },
+  "author": "Alexandrine Boissière",
+  "license": "BSD-2-Clause",
+  "devDependencies": {
+    "grunt": "~0.4.5",
+    "karma": "~0.12.16",
+    "grunt-karma": "~0.8.3",
+    "karma-jasmine": "~0.2.0",
+    "karma-phantomjs-launcher": "~0.1.4"
+  }
+}
