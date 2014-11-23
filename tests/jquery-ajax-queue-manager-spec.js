@@ -218,6 +218,32 @@ describe('ajaxQueueManager', function () {
 
         });
 
+        it('Should trigger the complete callback on success with the following arguments: jqxhr, textStatus', function () {
+            jasmine.Ajax.requests.mostRecent().response({
+                "status": 200,
+                "contentType": 'application/json',
+                "responseText": '{"output":"hello","success":1}'
+            });
+            var args = completeFn.calls.mostRecent().args;
+            expect(args[0].output).toBeUndefined();
+            // complete first argument should be a jqxhr object
+            expect(typeof args[0].then).toBe("function");
+            expect(args[1]).toBe('success');
+        });
+
+        it('Should trigger the complete callback on failure with the following arguments: jqxhr, textStatus', function () {
+            jasmine.Ajax.requests.mostRecent().response({
+                "status": 404,
+                "contentType": 'application/json'
+            });
+            var args = completeFn.calls.mostRecent().args;
+            expect(args[0].output).toBeUndefined();
+            // complete first argument should be a jqxhr object
+            expect(typeof args[0].then).toBe("function");
+            expect(args[1]).toBe('error');
+        });
+
+
     });
 
     describe('Multiple Queued asynchronous calls', function () {

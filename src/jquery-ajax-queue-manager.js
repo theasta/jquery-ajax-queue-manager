@@ -34,7 +34,7 @@ $.ajaxQueueManager = (function ($) {
         $.extend(ajaxQueueManager.defaults, defaults);
     };
 
-    var _onAjaxSuccess = function (context, origFn, data, textStatus, xhr, o) {
+    var _onAjaxSuccess = function (ajaxEvent, origFn, data, textStatus, xhr, o) {
         var managerInstance = this;
         if (_isAbort.call(managerInstance, xhr, textStatus, o)) {
             return;
@@ -47,23 +47,23 @@ $.ajaxQueueManager = (function ($) {
                 managerInstance.abort(name);
             });
         }
-        origFn.call(context, data, textStatus, xhr);
+        origFn.call(ajaxEvent, data, textStatus, xhr);
     };
 
-    var _onAjaxComplete = function (context, origFn, xhr, textStatus, xhrID, o) {
+    var _onAjaxComplete = function (ajaxEvent, origFn, xhr, textStatus, xhrID, o) {
         var managerInstance = this;
         if (_isAbort.call(managerInstance, xhr, textStatus, o)) {
             textStatus = 'abort';
-            o.abort.call(context, xhr, textStatus, o);
+            o.abort.call(ajaxEvent, xhr, textStatus, o);
         }
-        origFn.call(context, xhr, textStatus);
+        origFn.call(ajaxEvent, xhr, textStatus);
 
         _removeXHR.call(managerInstance, xhrID);
     };
 
-    var _onAjaxError = function (context, origFn, xhr, textStatus, errorThrown, o) {
+    var _onAjaxError = function (ajaxEvent, origFn, xhr, textStatus, errorThrown, o) {
         if ($.isFunction(origFn)) {
-            origFn.call(context, xhr, textStatus, errorThrown);
+            origFn.call(ajaxEvent, xhr, textStatus, errorThrown);
         } else {
             //always add some error callback
             if (textStatus != 'abort') {
@@ -158,8 +158,7 @@ $.ajaxQueueManager = (function ($) {
 
 
             if (this.requests[xhrID] && ajaxOptions.preventDoubleRequests) {
-                //@todo should rather return a fake deferred because this deferred should never resolve?
-                return $.Deferred;
+                return $.Deferred().promise();
             }
 
             var completeFn = ajaxOptions.complete || $.noop;
@@ -195,15 +194,15 @@ $.ajaxQueueManager = (function ($) {
 
             jqXHR
                 .done(function (data, textStatus, xhr) {
-                    _onAjaxSuccess.call(managerInstance, this, successFn, data, textStatus, xhr, ajaxOptions);
+                    var ajaxEvent = this; // 'this' is an Ajax Event instance
+                    _onAjaxSuccess.call(managerInstance, ajaxEvent, successFn, data, textStatus, xhr, ajaxOptions);
+                    _onAjaxComplete.call(managerInstance, ajaxEvent, completeFn, xhr, textStatus, xhrID, ajaxOptions);
                 })
                 .fail(function (xhr, textStatus, errorThrown) {
-                    _onAjaxError.call(managerInstance, this, errorFn, xhr, textStatus, errorThrown, ajaxOptions);
-                })
-                .always(function (xhr, textStatus) {
-                    _onAjaxComplete.call(managerInstance, this, completeFn, xhr, textStatus, xhrID, ajaxOptions);
+                    var ajaxEvent = this; // 'this' is an Ajax Event instance
+                    _onAjaxError.call(managerInstance, ajaxEvent, errorFn, xhr, textStatus, errorThrown, ajaxOptions);
+                    _onAjaxComplete.call(managerInstance, ajaxEvent, completeFn, xhr, textStatus, xhrID, ajaxOptions);
                 });
-
             return jqXHR;
 
         },
@@ -254,11 +253,9 @@ $.ajaxQueueManager = (function ($) {
             }
 
         },
-        clear: function (shouldAbort) {
+        clear: function () {
             $(document).clearQueue(this.queueName);
-            if (shouldAbort) {
-                this.abort();
-            }
+            this.abort();
         }
     };
 
